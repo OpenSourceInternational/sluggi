@@ -296,7 +296,7 @@ class DatamapHook
             $generatedPath = '';
             try {
                 $generatedPath = $pageRouter->generateUri($pageId, ['_language' => $languageId])->getPath();
-            } catch (InvalidRouteArgumentsException $e) {
+            } catch (\InvalidArgumentException | InvalidRouteArgumentsException $e) {
             }
             $variant = null;
             // There must be some kind of route enhancer involved
@@ -572,17 +572,14 @@ class DatamapHook
     protected function getBaseByPageId(Site $site, $pageId, $languageId): array
     {
         $language = null;
-        // Fetch default language page ID to get the site
-        if ($languageId > 0) {
-            $defaultLanguagePageId = BackendUtility::getRecord('pages', $pageId, 'l10n_parent')['l10n_parent'];
-            if ($defaultLanguagePageId > 0) {
-                $pageId = $defaultLanguagePageId;
-            }
-        }
+
         if ($languageId !== null) {
-            $language = $site->getLanguageById((int)$languageId);
-        }
-        if ($language === null) {
+            try {
+                $language = $site->getLanguageById((int)$languageId);
+            } catch (\Exception $e){
+                return [$site->getBase()->getHost(), ''];
+            }
+        } else {
             $language = $site->getDefaultLanguage();
         }
 
