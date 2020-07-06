@@ -13,6 +13,9 @@ use TYPO3\CMS\Core\Database\Query\Restriction\HiddenRestriction;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\DataHandling\SlugHelper;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Log\LogLevel;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Routing\InvalidRouteArgumentsException;
@@ -40,6 +43,11 @@ class DatamapHook
     protected $connection;
 
     /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
      * @var array
      */
     protected $flashMessages = [];
@@ -48,6 +56,9 @@ class DatamapHook
     {
         $this->connection = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getConnectionForTable('pages');
+
+        $this->logger = GeneralUtility::makeInstance(LogManager::class)
+            ->getLogger(__CLASS__);
     }
 
     /**
@@ -297,6 +308,7 @@ class DatamapHook
             try {
                 $generatedPath = $pageRouter->generateUri($pageId, ['_language' => $languageId])->getPath();
             } catch (\InvalidArgumentException | InvalidRouteArgumentsException $e) {
+                $this->logger->log(LogLevel::WARNING, "Failed to generate path for page $pageId and language $languageId.");
             }
             $variant = null;
             // There must be some kind of route enhancer involved
@@ -577,9 +589,11 @@ class DatamapHook
             try {
                 $language = $site->getLanguageById((int)$languageId);
             } catch (\InvalidArgumentException $e){
-                return [$site->getBase()->getHost(), ''];
+                $this->logger->log(LogLevel::WARNING, "Language $languageId does not exist or disabled on site!");
             }
-        } else {
+        }
+
+        if ($languageId === null) {
             $language = $site->getDefaultLanguage();
         }
 
