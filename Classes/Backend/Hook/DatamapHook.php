@@ -576,7 +576,7 @@ class DatamapHook
         if ($languageId !== null) {
             try {
                 $language = $site->getLanguageById((int)$languageId);
-            } catch (\Exception $e){
+            } catch (\InvalidArgumentException $e){
                 return [$site->getBase()->getHost(), ''];
             }
         } else {
